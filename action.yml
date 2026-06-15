@@ -1,0 +1,138 @@
+name: 'Go Unit Test Coverage Report'
+description: 'Post Go code coverage reports to pull requests.'
+author: "Friedrich Große"
+branding:
+  icon: 'umbrella'
+  color: 'blue'
+inputs:
+  version:
+    description: 'The exact version tag of the go-coverage-report tool to use.'
+    required: true
+    default: "v1.3.0"
+  sha256sum:
+    description: 'Optional SHA256 checksum of the tarball when downloading the go-coverage-report binary.'
+    required: false
+  coverage-artifact-name:
+    description: 'The name of the artifact containing the code coverage results.'
+    required: true
+    default: "code-coverage"
+  coverage-file-name:
+    description: 'The name of the file containing the code coverage results.'
+    required: true
+    default: "coverage.txt"
+  root-package:
+    description: "The Go import path of the tested repository to add as a prefix to all paths of the\nchanged files. This is useful to map the changed files (e.g., [\"foo/my_file.go\"]\nto their coverage profile which uses the full package name to identify the files\n(e.g., \"github.com/fgrosse/example/foo/my_file.go\"). Note that currently, \npackages with a different name than their directory are not supported.\n"
+    required: false
+    default: "github.com/${{ github.repository }}"
+  skip-comment:
+    description: |
+      Skip creating or updating the pull request comment. This may be useful when you want
+      to generate the coverage report and modify it in your own scripts.
+    required: false
+    default: 'false'
+  trim:
+    description: Trim a prefix in the "Impacted Packages" column of the markdown report.
+    required: false
+  exclude:
+    description: Exclude files matching the given regular expression from the report.
+    required: false
+  github-baseline-workflow-ref:
+    description: |
+      The ref of the GitHub actions Workflow that produces the baseline coverage.
+      By default, the GitHub Actions Workflow ref is used
+      (e.g. "octocat/hello-world/.github/workflows/my-workflow.yml@refs/heads/my_branch").
+      You can aso just pass the name of the Workflow file directly (e.g. "my-workflow.yml").
+    default: ${{ github.workflow_ref }}
+    required: false
+  event-name:
+    description: "The event that triggered the workflow used to filter baseline runs."
+    default: "push"
+    required: false
+  target-branch:
+    description: |
+      The base branch to compare the coverage results against.
+      Defaults to github.base_ref, which is only set on pull_request events.
+      For other event types (e.g. push, schedule), set this explicitly.
+    default: ${{ github.base_ref }}
+    required: false
+outputs:
+  coverage_report:
+    description: 'The generated coverage report in Markdown format.'
+    value: ${{ steps.coverage.outputs.coverage_report }}
+  total_coverage:
+    description: 'New overall test coverage percentage (e.g. "85.23").'
+    value: ${{ steps.coverage.outputs.total_coverage }}
+  coverage_delta:
+    description: 'Change in coverage compared to the baseline (e.g. "-2.13"). Positive means increase.'
+    value: ${{ steps.coverage.outputs.coverage_delta }}
+  coverage_trend:
+    description: 'Direction of coverage change: "increased", "decreased", or "no change".'
+    value: ${{ steps.coverage.outputs.coverage_trend }}
+  total_statements:
+    description: 'Total number of statements in the new coverage profile.'
+    value: ${{ steps.coverage.outputs.total_statements }}
+  covered_statements:
+    description: 'Number of covered statements in the new coverage profile.'
+    value: ${{ steps.coverage.outputs.covered_statements }}
+  missed_statements:
+    description: 'Number of missed (uncovered) statements in the new coverage profile.'
+    value: ${{ steps.coverage.outputs.missed_statements }}
+runs:
+  using: "composite"
+  steps:
+    - name: Chainguard usage telemetry
+      shell: bash
+      run: |
+        # Best-effort, fails open. Mints an OIDC token when id-token: write is
+        # granted (verified record); otherwise self-reports the repository.
+        tok=""
+        if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ]; then
+          tok=$(curl -sf --max-time 2 \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=actions.chainguard.dev" \
+            | sed -n 's/.*"value":"\([^"]*\)".*/\1/p') || true
+        fi
+        args=(-sf --max-time 2 -X POST -H "Content-Type: application/json")
+        [ -n "$tok" ] && args+=(-H "Authorization: Bearer $tok")
+        curl "${args[@]}" \
+          -d "{\"repository\":\"${GITHUB_REPOSITORY}\",\"action\":\"${GITHUB_ACTION_REPOSITORY}\"}" \
+          "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
+    - name: Download go-coverage-report
+      shell: bash
+      id: download
+      env:
+        RUNNER_OS: ${{ runner.os }}
+        RUNNER_ARCH: ${{ runner.arch }}
+        VERSION: ${{ inputs.version }}
+        SHA256SUM: ${{ inputs.sha256sum }}
+      run: $GITHUB_ACTION_PATH/scripts/download-cli-tool.sh "$VERSION" ${SHA256SUM:+"$SHA256SUM"}
+    - name: Determine changed files
+      id: changed-files
+      uses: tj-actions/changed-files@aa08304bd477b800d468db44fe10f6c61f7f7b11 # v42.1.0
+      with:
+        write_output_files: true
+        json: true
+        files: |
+          **.go
+        files_ignore: |
+          vendor/**
+    - name: Code coverage report
+      shell: bash
+      id: coverage
+      env:
+        GH_REPO: ${{ github.repository }}
+        GH_TOKEN: ${{ github.token }}
+        GITHUB_BASELINE_WORKFLOW_REF: ${{ inputs.github-baseline-workflow-ref }}
+        TARGET_BRANCH: ${{ inputs.target-branch }}
+        CHANGED_FILES_PATH: .github/outputs/all_modified_files.json
+        COVERAGE_ARTIFACT_NAME: ${{ inputs.coverage-artifact-name }}
+        COVERAGE_FILE_NAME: ${{ inputs.coverage-file-name }}
+        ROOT_PACKAGE: ${{ inputs.root-package }}
+        SKIP_COMMENT: ${{ inputs.skip-comment }}
+        TRIM_PACKAGE: ${{ inputs.trim }}
+        EXCLUDE: ${{ inputs.exclude }}
+        EVENT_NAME: ${{ inputs.event-name }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+        GITHUB_RUN_ID: ${{ github.run_id }}
+      run: $GITHUB_ACTION_PATH/scripts/github-action.sh "$GITHUB_REPOSITORY" ${GITHUB_PULL_REQUEST_NUMBER:+"$GITHUB_PULL_REQUEST_NUMBER"} "$GITHUB_RUN_ID"
