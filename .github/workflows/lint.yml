@@ -1,0 +1,70 @@
+name: Lint
+on:
+  pull_request:
+    paths:
+      - "**.sh"
+      - "**.go"
+      - go.mod
+      - go.sum
+
+permissions:
+  contents: read
+
+jobs:
+  dependencies:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # Installs the Go version pinned in mise.toml.
+      - name: Set up tools
+        uses: jdx/mise-action@dad1bfd3df957f44999b559dd69dc1671cb4e9ea # v4.2.1
+        with:
+          install_args: "go"
+
+      - name: Verify dependencies
+        run: |
+          go mod verify
+          go mod download
+
+      - name: Go mod tidy
+        run: |
+          go mod tidy
+          if ! diff="$(git diff -U1 --color --exit-code)"; then
+            printf '::error title="go mod tidy results in modifications"::Running `%s` results in modifications that you must check into version control:\n%s\n\n' "go mod tidy" "$diff"
+            exit 1
+          fi
+
+  golang-ci:
+    name: Go Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # Installs the Go and golangci-lint versions pinned in mise.toml. Go is
+      # required here as well because golangci-lint shells out to "go list" to
+      # load the packages it analyses.
+      - name: Set up tools
+        uses: jdx/mise-action@dad1bfd3df957f44999b559dd69dc1671cb4e9ea # v4.2.1
+        with:
+          install_args: "go golangci-lint"
+
+      - name: golangci-lint
+        run: golangci-lint run ./...
+
+  shell-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # Installs the shellcheck version pinned in mise.toml.
+      - name: Set up tools
+        uses: jdx/mise-action@dad1bfd3df957f44999b559dd69dc1671cb4e9ea # v4.2.1
+        with:
+          install_args: "shellcheck"
+
+      - name: ShellCheck
+        run: shellcheck scripts/*.sh

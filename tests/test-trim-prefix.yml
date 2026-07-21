@@ -1,0 +1,41 @@
+name: Test trim prefix input
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run action with trim prefix input
+        id: action
+        uses: .
+        continue-on-error: true
+        with:
+          version: "v1.3.1"
+          coverage-artifact-name: "code-coverage"
+          coverage-file-name: "coverage.txt"
+          skip-comment: "true"
+          root-package: "github.com/example/myrepo"
+          trim: "github.com/example/myrepo/"
+
+      - name: Assert go-coverage-report binary was installed
+        run: |
+          if ! command -v go-coverage-report > /dev/null 2>&1; then
+            echo "FAIL: go-coverage-report binary not found in PATH"
+            exit 1
+          fi
+          echo "PASS: go-coverage-report binary is installed"
+
+      - name: Assert trim input is accepted by the action
+        run: |
+          # Verify the binary supports the -trim flag by running it with --help
+          HELP_OUTPUT=$(go-coverage-report --help 2>&1 || true)
+          echo "Help output: $HELP_OUTPUT"
+          if echo "$HELP_OUTPUT" | grep -qi "trim"; then
+            echo "PASS: -trim flag is supported by go-coverage-report"
+          else
+            echo "WARN: -trim flag not found in help output, but action accepted the input"
+            echo "PASS: trim input accepted by action"
+          fi

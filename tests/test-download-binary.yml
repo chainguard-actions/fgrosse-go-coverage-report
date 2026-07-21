@@ -1,0 +1,41 @@
+name: Test download binary
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run action (download step will succeed; coverage step may fail without artifact)
+        id: action
+        uses: .
+        continue-on-error: true
+        with:
+          version: "v1.3.1"
+          coverage-artifact-name: "code-coverage"
+          coverage-file-name: "coverage.txt"
+          skip-comment: "true"
+
+      - name: Assert go-coverage-report binary was installed
+        run: |
+          if ! command -v go-coverage-report > /dev/null 2>&1; then
+            echo "FAIL: go-coverage-report binary not found in PATH"
+            exit 1
+          fi
+          echo "PASS: go-coverage-report binary is installed"
+          go-coverage-report --version 2>&1 || true
+
+      - name: Assert binary is executable
+        run: |
+          BIN=$(which go-coverage-report 2>/dev/null || echo "")
+          if [ -z "$BIN" ]; then
+            echo "FAIL: go-coverage-report not found in PATH"
+            exit 1
+          fi
+          if [ ! -x "$BIN" ]; then
+            echo "FAIL: go-coverage-report binary is not executable"
+            exit 1
+          fi
+          echo "PASS: go-coverage-report binary is executable at $BIN"

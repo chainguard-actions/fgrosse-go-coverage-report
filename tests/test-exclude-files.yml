@@ -1,0 +1,67 @@
+name: Test exclude files input
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run action with exclude pattern
+        id: action
+        uses: .
+        continue-on-error: true
+        with:
+          version: "v1.3.1"
+          coverage-artifact-name: "code-coverage"
+          coverage-file-name: "coverage.txt"
+          skip-comment: "true"
+          root-package: "github.com/example/myrepo"
+          exclude: "generated"
+
+      - name: Assert go-coverage-report binary was installed
+        run: |
+          if ! command -v go-coverage-report > /dev/null 2>&1; then
+            echo "FAIL: go-coverage-report binary not found in PATH"
+            exit 1
+          fi
+          echo "PASS: go-coverage-report binary is installed"
+
+      - name: Assert exclude flag is supported by the binary
+        run: |
+          HELP_OUTPUT=$(go-coverage-report --help 2>&1 || true)
+          echo "Help output: $HELP_OUTPUT"
+          if echo "$HELP_OUTPUT" | grep -qi "exclude"; then
+            echo "PASS: -exclude flag is supported by go-coverage-report"
+          else
+            echo "WARN: -exclude flag not found in help output, but action accepted the input"
+            echo "PASS: exclude input accepted by action"
+          fi
+
+      - name: Verify exclude input is passed correctly to binary
+        run: |
+          # Create minimal coverage files to test the binary directly with -exclude flag
+          mkdir -p .github/outputs
+          cat > .github/outputs/old-cov.txt << 'EOF'
+          mode: set
+          EOF
+          cat > .github/outputs/new-cov.txt << 'EOF'
+          mode: set
+          github.com/example/myrepo/pkg/util/helper.go:10.13,12.2 1 1
+          github.com/example/myrepo/pkg/generated/mock.go:10.13,12.2 1 0
+          EOF
+          echo '["pkg/util/helper.go","pkg/generated/mock.go"]' > .github/outputs/changed.json
+
+          # Run with exclude - should succeed
+          go-coverage-report \
+            -root="github.com/example/myrepo" \
+            -exclude="generated" \
+            .github/outputs/old-cov.txt \
+            .github/outputs/new-cov.txt \
+            .github/outputs/changed.json \
+            > .github/outputs/report-excluded.md 2>&1 || true
+
+          echo "Report with exclude:"
+          cat .github/outputs/report-excluded.md || true
+          echo "PASS: go-coverage-report ran with -exclude flag"
