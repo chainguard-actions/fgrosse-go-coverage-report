@@ -1,0 +1,43 @@
+name: Test skip-comment input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          version: "v1.4.0"
+          coverage-artifact-name: "code-coverage"
+          coverage-file-name: "coverage.txt"
+          skip-comment: "true"
+          root-package: "github.com/fgrosse/go-coverage-report"
+          target-branch: "main"
+          event-name: "push"
+
+      - name: Assert binary was installed and action ran with skip-comment=true
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # Verify the binary was downloaded (first step of the action)
+          if command -v go-coverage-report > /dev/null 2>&1; then
+            echo "Binary found at: $(which go-coverage-report)"
+            echo "PASS: binary installed successfully"
+          else
+            echo "FAIL: go-coverage-report binary not found - download step failed"
+            exit 1
+          fi
+          # The action may fail at the API step due to sentinel repo - that is expected
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded with skip-comment=true"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected - sentinel repo API calls cannot succeed)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

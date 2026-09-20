@@ -1,0 +1,35 @@
+name: Test go-coverage-report binary download
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          version: "v1.4.0"
+          coverage-artifact-name: "code-coverage"
+          coverage-file-name: "coverage.txt"
+          skip-comment: "true"
+          target-branch: "main"
+          event-name: "push"
+
+      - name: Assert binary was downloaded and installed
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The binary download step runs before the API calls that fail on sentinel repo.
+          # Check if the binary was installed to /usr/bin (download step succeeded).
+          if command -v go-coverage-report > /dev/null 2>&1; then
+            echo "Binary found at: $(which go-coverage-report)"
+            echo "PASS: go-coverage-report binary was successfully downloaded and installed"
+          else
+            echo "FAIL: go-coverage-report binary not found in PATH"
+            echo "This means the download step itself failed"
+            exit 1
+          fi
