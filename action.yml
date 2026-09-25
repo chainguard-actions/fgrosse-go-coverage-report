@@ -111,7 +111,7 @@ runs:
         INPUT_SHA256SUM: ${{ inputs.sha256sum }}
     - name: Determine changed files
       id: changed-files
-      uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+      uses: chainguard-actions/tj-actions-changed-files@25465cfff429d97d0a03620c97f7b699c148b32a # v47.0.6
       with:
         write_output_files: true
         json: true
