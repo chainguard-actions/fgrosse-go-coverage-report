@@ -23,21 +23,23 @@ You can use the following environment variables to configure the script:
 - DRY_RUN: Do not actually move the binary to /usr/bin (default: false)
 "
 
-VERSION=${VERSION:-}
+if [[ $# == 0 ]]; then
+  echo -e "Error: script requires at least one argument\n"
+  echo "$USAGE"
+  exit 1
+fi
+
+VERSION=$1
 RUNNER_OS=${RUNNER_OS:-Linux}
 RUNNER_ARCH=${RUNNER_ARCH:-X64}
 
-# Also support legacy positional arguments for backwards compatibility
-if [[ $# -ge 1 ]]; then
-  VERSION=$1
-fi
-if [[ $# -ge 2 ]]; then
-  SHA256SUM=$2
+if [[ -z ${VERSION+x} ]]; then
+    echo "Missing version argument"
+    exit 1
 fi
 
-if [[ -z "${VERSION}" ]]; then
-    echo "Missing VERSION environment variable or version argument"
-    exit 1
+if [[ $# == 2 ]]; then
+  SHA256SUM=$2
 fi
 
 sudo_or_dry_run="sudo"
