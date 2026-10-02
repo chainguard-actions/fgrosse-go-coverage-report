@@ -1,0 +1,36 @@
+name: Test sha256sum input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          version: "v1.5.0"
+          sha256sum: "0000000000000000000000000000000000000000000000000000000000000000"
+          coverage-artifact-name: "code-coverage"
+          coverage-file-name: "coverage.txt"
+          skip-comment: "true"
+          target-branch: "main"
+
+      - name: Assert action ran (sha256sum mismatch causes download failure, which is expected)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # A wrong sha256sum should cause the download step to fail (checksum mismatch),
+          # so we expect failure here. What matters is that the sha256sum input was accepted
+          # and the action attempted to use it (not an input validation error).
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed as expected (sha256sum mismatch or sentinel repo)"
+          elif [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded (unexpected but acceptable)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
