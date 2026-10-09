@@ -105,7 +105,7 @@ runs:
         RUNNER_ARCH: ${{ runner.arch }}
         VERSION: ${{ inputs.version }}
         SHA256SUM: ${{ inputs.sha256sum }}
-      run: $GITHUB_ACTION_PATH/scripts/download-cli-tool.sh "$VERSION" ${SHA256SUM:+"$SHA256SUM"}
+      run: $GITHUB_ACTION_PATH/scripts/download-cli-tool.sh "$VERSION" "$SHA256SUM"
     - name: Determine changed files
       id: changed-files
       uses: tj-actions/changed-files@aa08304bd477b800d468db44fe10f6c61f7f7b11 # v42.1.0
@@ -135,4 +135,4 @@ runs:
         GITHUB_REPOSITORY: ${{ github.repository }}
         GITHUB_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
         GITHUB_RUN_ID: ${{ github.run_id }}
-      run: $GITHUB_ACTION_PATH/scripts/github-action.sh "$GITHUB_REPOSITORY" ${GITHUB_PULL_REQUEST_NUMBER:+"$GITHUB_PULL_REQUEST_NUMBER"} "$GITHUB_RUN_ID"
+      run: $GITHUB_ACTION_PATH/scripts/github-action.sh

@@ -37,15 +37,15 @@ You can use the following environment variables to configure the script:
 - SKIP_COMMENT: Skip creating or updating the pull request comment (default: false)
 "
 
-if [[ $# != 3 ]]; then
-  echo -e "Error: script requires exactly three arguments\n"
+if [[ $# == 3 ]]; then
+  GITHUB_REPOSITORY=$1
+  GITHUB_PULL_REQUEST_NUMBER=$2
+  GITHUB_RUN_ID=$3
+elif [[ $# != 0 ]]; then
+  echo -e "Error: script requires exactly three arguments or none (using environment variables)\n"
   echo "$USAGE"
   exit 1
 fi
-
-GITHUB_REPOSITORY=$1
-GITHUB_PULL_REQUEST_NUMBER=$2
-GITHUB_RUN_ID=$3
 GITHUB_BASELINE_WORKFLOW=${GITHUB_BASELINE_WORKFLOW:-CI}
 TARGET_BRANCH=${TARGET_BRANCH:-main}
 EVENT_NAME=${EVENT_NAME:-push}

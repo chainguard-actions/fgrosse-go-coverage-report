@@ -4,11 +4,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_REF: refs/heads/main
-      GITHUB_EVENT_NAME: push
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - id: action
         uses: .
         continue-on-error: true
@@ -18,17 +16,21 @@ jobs:
           coverage-artifact-name: "code-coverage"
           coverage-file-name: "coverage.txt"
           skip-comment: "true"
-          target-branch: "main"
-      - name: Assert action ran (sha256sum input accepted)
+
+      - name: Assert action ran (sha256sum input accepted, or failed gracefully)
         env:
           OUTCOME: ${{ steps.action.outcome }}
         run: |
           echo "outcome: $OUTCOME"
-          # The action will fail because the sha256sum is intentionally wrong,
-          # but it must not fail because of an unrecognized 'sha256sum' input.
-          # Any outcome (success or failure) is acceptable here.
-          if [ "$OUTCOME" = "skipped" ]; then
-            echo "FAIL: action was skipped unexpectedly"
+          # The action is expected to fail because:
+          # 1. The sha256sum we provided is intentionally wrong (to test the input is accepted)
+          # 2. The sentinel GITHUB_REPOSITORY is not a real repo
+          # Either way, the action should fail gracefully (not with an unexpected error)
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully as expected (wrong sha256sum or sentinel repo)"
+          elif [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded unexpectedly (sha256sum input was accepted)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1
           fi
-          echo "PASS: sha256sum input was accepted by the action"

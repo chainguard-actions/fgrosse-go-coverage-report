@@ -23,17 +23,19 @@ You can use the following environment variables to configure the script:
 - DRY_RUN: Do not actually move the binary to /usr/bin (default: false)
 "
 
-if [[ $# == 0 ]]; then
-  echo -e "Error: script requires at least one argument\n"
+if [[ $# == 0 ]] && [[ -z "${VERSION:-}" ]]; then
+  echo -e "Error: script requires at least one argument or VERSION environment variable\n"
   echo "$USAGE"
   exit 1
 fi
 
-VERSION=$1
+if [[ $# -ge 1 ]]; then
+  VERSION=$1
+fi
 RUNNER_OS=${RUNNER_OS:-Linux}
 RUNNER_ARCH=${RUNNER_ARCH:-X64}
 
-if [[ -z ${VERSION+x} ]]; then
+if [[ -z "${VERSION:-}" ]]; then
     echo "Missing version argument"
     exit 1
 fi
