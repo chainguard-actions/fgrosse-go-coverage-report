@@ -108,7 +108,7 @@ runs:
       run: $GITHUB_ACTION_PATH/scripts/download-cli-tool.sh "$VERSION" "$SHA256SUM"
     - name: Determine changed files
       id: changed-files
-      uses: tj-actions/changed-files@aa08304bd477b800d468db44fe10f6c61f7f7b11 # v42.1.0
+      uses: chainguard-actions/tj-actions-changed-files@25c11428d834192192c4d829c4d43462f196bc89 # v42.1.0
       with:
         write_output_files: true
         json: true
