@@ -6,12 +6,12 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 
 ## Versions
 
-| Version | Tag | Upstream commit |
-|---------|-----|-----------------|
-| v1.3.0 | [`v1.3.0`](https://github.com/chainguard-actions/fgrosse-go-coverage-report/tree/v1.3.0) | [`cbeb2ab`](https://github.com/fgrosse/go-coverage-report/commit/cbeb2ab2e32591d690337146ba02a911cc566f3f) |
-| v1.3.1 | [`v1.3.1`](https://github.com/chainguard-actions/fgrosse-go-coverage-report/tree/v1.3.1) | [`e432de9`](https://github.com/fgrosse/go-coverage-report/commit/e432de98ee94a276e8f666d25bfd76347665f75b) |
-| v1.4.0 | [`v1.4.0`](https://github.com/chainguard-actions/fgrosse-go-coverage-report/tree/v1.4.0) | [`2eb52af`](https://github.com/fgrosse/go-coverage-report/commit/2eb52af4e808426e2d4edd850ff8c9ca14fce029) |
-| v1.5.0 | [`v1.5.0`](https://github.com/chainguard-actions/fgrosse-go-coverage-report/tree/v1.5.0) | [`c4bf7e7`](https://github.com/fgrosse/go-coverage-report/commit/c4bf7e78d1379325814b4dd42d80e526082e788b) |
+| Version | Tag | Upstream commit | Hardening report |
+|---------|-----|-----------------|------------------|
+| v1.3.0 | [`v1.3.0`](https://github.com/chainguard-actions/fgrosse-go-coverage-report/tree/v1.3.0) | [`cbeb2ab`](https://github.com/fgrosse/go-coverage-report/commit/cbeb2ab2e32591d690337146ba02a911cc566f3f) | [`HARDENING.md`](https://github.com/chainguard-actions/fgrosse-go-coverage-report/blob/v1.3.0/HARDENING.md) |
+| v1.3.1 | [`v1.3.1`](https://github.com/chainguard-actions/fgrosse-go-coverage-report/tree/v1.3.1) | [`e432de9`](https://github.com/fgrosse/go-coverage-report/commit/e432de98ee94a276e8f666d25bfd76347665f75b) | [`HARDENING.md`](https://github.com/chainguard-actions/fgrosse-go-coverage-report/blob/v1.3.1/HARDENING.md) |
+| v1.4.0 | [`v1.4.0`](https://github.com/chainguard-actions/fgrosse-go-coverage-report/tree/v1.4.0) | [`2eb52af`](https://github.com/fgrosse/go-coverage-report/commit/2eb52af4e808426e2d4edd850ff8c9ca14fce029) | [`HARDENING.md`](https://github.com/chainguard-actions/fgrosse-go-coverage-report/blob/v1.4.0/HARDENING.md) |
+| v1.5.0 | [`v1.5.0`](https://github.com/chainguard-actions/fgrosse-go-coverage-report/tree/v1.5.0) | [`c4bf7e7`](https://github.com/fgrosse/go-coverage-report/commit/c4bf7e78d1379325814b4dd42d80e526082e788b) | [`HARDENING.md`](https://github.com/chainguard-actions/fgrosse-go-coverage-report/blob/v1.5.0/HARDENING.md) |
 
 ## Privacy
 
