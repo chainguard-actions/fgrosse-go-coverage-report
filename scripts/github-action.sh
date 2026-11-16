@@ -163,10 +163,11 @@ fi
 
 # Output the coverage report as a multiline GitHub output parameter
 echo "Writing GitHub output parameter to \"$GITHUB_OUTPUT\""
+EOF_DELIM="END_OF_COVERAGE_REPORT_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
 {
-  echo "coverage_report<<END_OF_COVERAGE_REPORT"
+  echo "coverage_report<<$EOF_DELIM"
   cat "$COVERAGE_COMMENT_PATH"
-  echo "END_OF_COVERAGE_REPORT"
+  echo "$EOF_DELIM"
 } >> "$GITHUB_OUTPUT"
 
 if [ "$SKIP_COMMENT" = "true" ]; then
