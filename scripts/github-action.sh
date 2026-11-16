@@ -37,9 +37,15 @@ You can use the following environment variables to configure the script:
 - SKIP_COMMENT: Skip creating or updating the pull request comment (default: false)
 "
 
-GITHUB_REPOSITORY=${INPUT_GITHUB_REPOSITORY:-}
-GITHUB_PULL_REQUEST_NUMBER=${INPUT_GITHUB_PULL_REQUEST_NUMBER:-}
-GITHUB_RUN_ID=${INPUT_GITHUB_RUN_ID:-}
+if [[ $# != 3 ]]; then
+  echo -e "Error: script requires exactly three arguments\n"
+  echo "$USAGE"
+  exit 1
+fi
+
+GITHUB_REPOSITORY=$1
+GITHUB_PULL_REQUEST_NUMBER=$2
+GITHUB_RUN_ID=$3
 GITHUB_BASELINE_WORKFLOW=${GITHUB_BASELINE_WORKFLOW:-CI}
 TARGET_BRANCH=${TARGET_BRANCH:-main}
 EVENT_NAME=${EVENT_NAME:-push}
@@ -157,10 +163,11 @@ fi
 
 # Output the coverage report as a multiline GitHub output parameter
 echo "Writing GitHub output parameter to \"$GITHUB_OUTPUT\""
+EOF_DELIM="EOF_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
 {
-  echo "coverage_report<<END_OF_COVERAGE_REPORT"
+  echo "coverage_report<<$EOF_DELIM"
   cat "$COVERAGE_COMMENT_PATH"
-  echo "END_OF_COVERAGE_REPORT"
+  echo "$EOF_DELIM"
 } >> "$GITHUB_OUTPUT"
 
 if [ "$SKIP_COMMENT" = "true" ]; then
