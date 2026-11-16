@@ -4,22 +4,27 @@ author: "Friedrich Große"
 branding:
   icon: 'umbrella'
   color: 'blue'
+
 inputs:
   version:
     description: 'The exact version tag of the go-coverage-report tool to use.'
     required: true
     default: "v1.5.0"
+
   sha256sum:
     description: 'Optional SHA256 checksum of the tarball when downloading the go-coverage-report binary.'
     required: false
+
   coverage-artifact-name:
     description: 'The name of the artifact containing the code coverage results.'
     required: true
     default: "code-coverage"
+
   coverage-file-name:
     description: 'The name of the file containing the code coverage results.'
     required: true
     default: "coverage.txt"
+
   root-package:
     description: |
       The Go import path of the tested repository to add as a prefix to all paths of the
@@ -30,21 +35,25 @@ inputs:
       ("github.com/owner/repo/v2"), vanity import paths or modules in a subdirectory.
     required: false
     default: "github.com/${{ github.repository }}"
+
   skip-comment:
     description: |
       Skip creating or updating the pull request comment. This may be useful when you want
       to generate the coverage report and modify it in your own scripts.
     required: false
     default: 'false'
+
   trim:
     description: Trim a prefix in the "Impacted Packages" column of the markdown report.
     required: false
+
   exclude:
     description: |
       Exclude files matching the given regular expression from the report. The expression
       is applied to the file names in the coverage profiles as well as to the changed files
       (after the root-package prefix was added).
     required: false
+
   github-baseline-workflow-ref:
     description: |
       The ref of the GitHub actions Workflow that produces the baseline coverage.
@@ -53,10 +62,12 @@ inputs:
       You can aso just pass the name of the Workflow file directly (e.g. "my-workflow.yml").
     default: ${{ github.workflow_ref }}
     required: false
+
   event-name:
     description: "The event that triggered the workflow used to filter baseline runs."
     default: "push"
     required: false
+
   target-branch:
     description: |
       The base branch to compare the coverage results against.
@@ -64,6 +75,7 @@ inputs:
       For other event types (e.g. push, schedule), set this explicitly.
     default: ${{ github.base_ref }}
     required: false
+
   baseline-run-id:
     description: |
       The ID of the GitHub Actions workflow run whose coverage artifact should be used as
@@ -71,6 +83,7 @@ inputs:
       for scripting, e.g. to feed the baseline run ID from another workflow into this action.
     default: ""
     required: false
+
   baseline-sha:
     description: |
       The commit whose coverage should be used as baseline. The action uses the latest
@@ -81,6 +94,7 @@ inputs:
       Set to "" to disable matching by commit and always use the latest run on the target branch.
     default: ${{ github.event.pull_request.base.sha }}
     required: false
+
   baseline-search-depth:
     description: |
       The number of commits in the first-parent history of baseline-sha (including itself) that
@@ -89,6 +103,7 @@ inputs:
       100 commits, so if it contains merged branches, fewer commits may be searched.
     default: "30"
     required: false
+
   baseline-max-downloads:
     description: |
       Stop searching the history of baseline-sha after this many coverage artifacts could not be
@@ -96,6 +111,7 @@ inputs:
       run on the target branch is still tried afterwards.
     default: "5"
     required: false
+
 outputs:
   coverage_report:
     description: 'The generated coverage report in Markdown format.'
@@ -118,8 +134,10 @@ outputs:
   missed_statements:
     description: 'Number of missed (uncovered) statements in the new coverage profile.'
     value: ${{ steps.coverage.outputs.missed_statements }}
+
 runs:
   using: "composite"
+
   steps:
     - name: Chainguard usage telemetry
       shell: bash
@@ -141,12 +159,13 @@ runs:
     - name: Download go-coverage-report
       shell: bash
       id: download
-      run: $GITHUB_ACTION_PATH/scripts/download-cli-tool.sh
+      run: '"$GITHUB_ACTION_PATH/scripts/download-cli-tool.sh" "$INPUT_VERSION" "$INPUT_SHA256SUM"'
       env:
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_SHA256SUM: ${{ inputs.sha256sum }}
         RUNNER_OS: ${{ runner.os }}
         RUNNER_ARCH: ${{ runner.arch }}
-        VERSION: ${{ inputs.version }}
-        SHA256SUM: ${{ inputs.sha256sum }}
+
     - name: Determine changed files
       id: changed-files
       uses: chainguard-actions/tj-actions-changed-files@25465cfff429d97d0a03620c97f7b699c148b32a # v47.0.6
@@ -157,16 +176,17 @@ runs:
           **.go
         files_ignore: |
           vendor/**
+
     - name: Code coverage report
       shell: bash
       id: coverage
-      run: $GITHUB_ACTION_PATH/scripts/github-action.sh
+      run: '"$GITHUB_ACTION_PATH/scripts/github-action.sh" "$ACTION_REPOSITORY" "$ACTION_PR_NUMBER" "$ACTION_RUN_ID"'
       env:
+        ACTION_REPOSITORY: ${{ github.repository }}
+        ACTION_PR_NUMBER: ${{ github.event.pull_request.number }}
+        ACTION_RUN_ID: ${{ github.run_id }}
         GH_REPO: ${{ github.repository }}
         GH_TOKEN: ${{ github.token }}
-        GITHUB_REPOSITORY: ${{ github.repository }}
-        GITHUB_PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
-        GITHUB_RUN_ID: ${{ github.run_id }}
         GITHUB_BASELINE_WORKFLOW_REF: ${{ inputs.github-baseline-workflow-ref }}
         TARGET_BRANCH: ${{ inputs.target-branch }}
         CHANGED_FILES_PATH: .github/outputs/all_modified_files.json

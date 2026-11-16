@@ -43,21 +43,15 @@ You can use the following environment variables to configure the script:
 - SKIP_COMMENT: Skip creating or updating the pull request comment (default: false)
 "
 
-if [[ $# == 3 ]]; then
-  GITHUB_REPOSITORY=${GITHUB_REPOSITORY:-$1}
-  GITHUB_PULL_REQUEST_NUMBER=${GITHUB_PULL_REQUEST_NUMBER:-$2}
-  GITHUB_RUN_ID=${GITHUB_RUN_ID:-$3}
-elif [[ $# != 0 ]]; then
-  echo -e "Error: script requires either zero arguments (using environment variables) or exactly three positional arguments\n"
+if [[ $# != 3 ]]; then
+  echo -e "Error: script requires exactly three arguments\n"
   echo "$USAGE"
   exit 1
 fi
 
-if [[ -z "${GITHUB_REPOSITORY:-}" ]]; then
-  echo -e "Error: GITHUB_REPOSITORY environment variable (or first positional argument) is required\n"
-  echo "$USAGE"
-  exit 1
-fi
+GITHUB_REPOSITORY=$1
+GITHUB_PULL_REQUEST_NUMBER=$2
+GITHUB_RUN_ID=$3
 GITHUB_BASELINE_WORKFLOW=${GITHUB_BASELINE_WORKFLOW:-CI}
 TARGET_BRANCH=${TARGET_BRANCH:-main}
 EVENT_NAME=${EVENT_NAME:-push}
@@ -325,7 +319,8 @@ go-coverage-report \
     "$CHANGED_FILES_PATH" \
   > $COVERAGE_COMMENT_PATH
 
-cat "$METRICS_OUTPUT" >> "$GITHUB_OUTPUT"
+# Only forward well-formed single-line metrics to GITHUB_OUTPUT.
+grep -E '^(total_coverage|coverage_delta|coverage_trend|total_statements|covered_statements|missed_statements)=[A-Za-z0-9 .+-]*$' "$METRICS_OUTPUT" | tr -d '\r' >> "$GITHUB_OUTPUT" || true
 rm -f "$METRICS_OUTPUT"
 
 # If the report does not compare against the base commit of the pull request,
@@ -365,10 +360,11 @@ fi
 
 # Output the coverage report as a multiline GitHub output parameter
 echo "Writing GitHub output parameter to \"$GITHUB_OUTPUT\""
+EOF_DELIM="END_OF_COVERAGE_REPORT_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
 {
-  echo "coverage_report<<END_OF_COVERAGE_REPORT"
+  echo "coverage_report<<$EOF_DELIM"
   cat "$COVERAGE_COMMENT_PATH"
-  echo "END_OF_COVERAGE_REPORT"
+  echo "$EOF_DELIM"
 } >> "$GITHUB_OUTPUT"
 
 if [ "$SKIP_COMMENT" = "true" ]; then
